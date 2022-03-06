@@ -1,0 +1,26 @@
+redis:
+  addr: localhost:6379
+  password: root
+  db: 0
+
+
+postgre:
+  host: localhost
+  default_port: 5432
+  user: postgres
+  password: root
+  dbname: demo
+  ssl_mode: disable
+  time_zone: Asia/Shanghai
+
+
+zap:
+  file_name: ./AssetCollect.log
+  max_size: 10
+  max_backups: 5
+  max_age: 30
+  compress: false
+
+
+server:
+  mode: http

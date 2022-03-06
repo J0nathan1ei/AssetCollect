@@ -1,0 +1,26 @@
+upload:
+  # 上报对应url
+  url:
+    all_info:   http://localhost:8001/user/v1/all-info
+    host_info:  http://localhost:8001/user/v1/host-info
+    cpu_info:   http://localhost:8001/user/v1/cpu-info
+    disk_info:  http://localhost:8001/user/v1/disk-info
+    net_info:   http://localhost:8001/user/v1/net-info
+    mem_info:   http://localhost:8001/user/v1/mem-info
+
+
+mysql:
+  user: root
+  password: root
+  protocol: tcp
+  domain: 127.0.0.1
+  port: 3306
+  db_name: agent
+
+
+zap:
+  file_name: ./agent.log
+  max_size: 10
+  max_backups: 5
+  max_age: 30
+  compress: false

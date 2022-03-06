@@ -1,0 +1,8 @@
+2022-01-08T10:28:15.987+0800	ERROR	dao/dao.go:48	Redis Client build failed: ERR Client sent AUTH, but no password is set
+2022-01-08T16:04:22.672+0800	ERROR	dao/dao.go:48	Redis Client build failed: ERR Client sent AUTH, but no password is set
+2022-01-08T16:04:51.586+0800	ERROR	dao/dao.go:48	Redis Client build failed: ERR Client sent AUTH, but no password is set
+2022-01-08T16:05:24.730+0800	ERROR	dao/dao.go:48	Redis Client build failed: ERR Client sent AUTH, but no password is set
+2022-01-08T16:05:36.083+0800	ERROR	dao/dao.go:48	Redis Client build failed: ERR Client sent AUTH, but no password is set
+2022-01-08T16:05:50.872+0800	ERROR	dao/dao.go:48	Redis Client build failed: ERR Client sent AUTH, but no password is set
+2022-01-08T16:06:36.982+0800	ERROR	dao/dao.go:48	Redis Client build failed: ERR Client sent AUTH, but no password is set
+2022-01-08T16:06:51.240+0800	ERROR	dao/dao.go:48	Redis Client build failed: ERR Client sent AUTH, but no password is set

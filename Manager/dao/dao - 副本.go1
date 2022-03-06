@@ -1,0 +1,87 @@
+package dao
+
+import (
+	"errors"
+	"fmt"
+	"github.com/go-redis/redis"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"manager/common"
+	"manager/config"
+	"manager/model"
+	"time"
+)
+
+var (
+	PostgreDB *gorm.DB
+	RedisDB   *redis.Client
+)
+
+func InitAll(){
+	initPostgre()
+	initRedis()
+}
+
+// PostgreSql连接初始化
+func initPostgre(){
+	conn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s timezone=%s",
+		config.ManagerCfg.PostgreCfg.Host,
+		config.ManagerCfg.PostgreCfg.Port,
+		config.ManagerCfg.PostgreCfg.User,
+		config.ManagerCfg.PostgreCfg.Password,
+		config.ManagerCfg.PostgreCfg.DB,
+		config.ManagerCfg.PostgreCfg.SSLMode,
+		config.ManagerCfg.PostgreCfg.TimeZone)
+	db, err := gorm.Open(postgres.Open(conn), &gorm.Config{})
+	if err != nil{
+		common.Logger.Error("PostgreSql Connect failed: ", err)
+	}
+	PostgreDB = db
+}
+
+
+// Redis连接初始化
+func initRedis(){
+	redisConn := redis.NewClient(&redis.Options{
+		Addr:     config.ManagerCfg.RedisCfg.Addr,
+		Password: config.ManagerCfg.RedisCfg.Password,
+		DB:       config.ManagerCfg.RedisCfg.DB,
+	})
+	if _, err := redisConn.Ping().Result(); err!=nil{
+		common.Logger.Error("Redis Client build failed: ", err)
+	}
+	RedisDB = redisConn
+}
+
+
+// 检查用户存在性
+func CheckUserExists(user string) error{
+	var count int64
+	err := PostgreDB.Model(&model.User{}).Where("user_name = ?", user).Count(&count).Error
+	if err != nil{
+		return err
+	}else if count != 1 {
+		return errors.New("USER COUNT ERROR")
+	}
+	return nil
+}
+
+// 检查用户名和密码，判断是否正确
+func CheckUserPwd(user string, pwdHash string) error{
+	return PostgreDB.Where("user_name = ? and pwd_hash = ?", user, pwdHash).First(&user).Error
+}
+
+
+// 设置用户回话session
+var ExpireTime int = 600
+func SetUserSession(user string)(string){
+	uuid := common.GenUUID()
+	RedisDB.Set(user, uuid, time.Duration(ExpireTime)*time.Second)
+	return uuid
+}
+
+
+// 程序退出时反初始化
+func UnInit(){
+	RedisDB.Close()
+}

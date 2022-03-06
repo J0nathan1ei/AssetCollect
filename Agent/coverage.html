@@ -1,0 +1,665 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>agent: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">agent/agent_main.go (100.0%)</option>
+				
+				<option value="file1">agent/collect/all_info.go (100.0%)</option>
+				
+				<option value="file2">agent/collect/cpu.go (84.6%)</option>
+				
+				<option value="file3">agent/collect/disk.go (80.0%)</option>
+				
+				<option value="file4">agent/collect/host.go (81.8%)</option>
+				
+				<option value="file5">agent/collect/mem.go (83.3%)</option>
+				
+				<option value="file6">agent/collect/net.go (87.5%)</option>
+				
+				<option value="file7">agent/common/logger.go (100.0%)</option>
+				
+				<option value="file8">agent/common/parse.go (71.4%)</option>
+				
+				<option value="file9">agent/config/config.go (71.4%)</option>
+				
+				<option value="file10">agent/dao/dao.go (93.8%)</option>
+				
+				<option value="file11">agent/dao/model.go (100.0%)</option>
+				
+				<option value="file12">agent/reporter/report.go (81.2%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "agent/common"
+        "agent/config"
+        "agent/dao"
+        "agent/reporter"
+)
+
+
+func initAll()<span class="cov8" title="1">{
+        // 初始化日志
+        common.InitLogger()
+        // 初始化配置文件
+        config.InitConfig(config.Path)
+        // 初始化mysql数据库
+        dao.Init()
+}</span>
+
+
+func main() <span class="cov8" title="1">{
+        initAll()
+        reporter.ReportAll()
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package collect
+
+import "agent/common"
+
+type AgentInfo struct {
+        Host AgentAct `comment:"主机信息"`
+        Net  AgentAct `comment:"网络信息"`
+        CPU  AgentAct `comment:"CPU信息"`
+        Mem  AgentAct `comment:"内存信息"`
+        Disk AgentAct `comment:"硬盘信息"`
+}
+
+func NewAgentInfo() AgentAct <span class="cov8" title="1">{
+        return &amp;AgentInfo{
+                NewHostInfo(),
+                NewNetInfo(),
+                NewCpuInfo(),
+                NewMemInfo(),
+                NewDiskInfo(),
+        }
+}</span>
+
+// 采集所有信息
+func (i *AgentInfo) Collect() <span class="cov8" title="1">{
+        i.Host.Collect()
+        i.Net.Collect()
+        i.CPU.Collect()
+        i.Mem.Collect()
+        i.Disk.Collect()
+}</span>
+
+// 采集，然后生成上报字符串
+func (i *AgentInfo) GetReportStr() string <span class="cov8" title="1">{
+        i.Collect()
+        return common.StructToJson(*i)
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package collect
+
+import (
+        "agent/common"
+        "fmt"
+        "github.com/shirou/gopsutil/v3/cpu"
+        "strconv"
+        "time"
+)
+
+type CPUInfo struct {
+        CPUModel string  `comment:"CPU型号"`
+        CPUCores int     `comment:"CPU核数"`
+        CPUUsage float64 `comment:"CPU使用率"`
+}
+
+func NewCpuInfo() AgentAct <span class="cov8" title="1">{
+        return &amp;CPUInfo{}
+}</span>
+
+// CPU信息
+func (i *CPUInfo) Collect() <span class="cov8" title="1">{
+        pCpu, err := cpu.Info()
+        if err != nil </span><span class="cov0" title="0">{
+                common.Logger.Error("collect cpu info failed: ", err)
+                return
+        }</span>
+        <span class="cov8" title="1">i.CPUModel = pCpu[0].ModelName
+        i.CPUCores = int(pCpu[0].Cores)
+        cpuUsage, _ := cpu.Percent(time.Second, false)
+        cpuUsageRet, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", cpuUsage[0]), 64)
+        i.CPUUsage = cpuUsageRet
+
+        return</span>
+}
+
+// 采集，然后生成上报字符串
+func (i *CPUInfo) GetReportStr() string <span class="cov8" title="1">{
+        i.Collect()
+        return common.StructToJson(*i)
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package collect
+
+import (
+        "agent/common"
+        "fmt"
+        "github.com/shirou/gopsutil/v3/disk"
+)
+
+type DiskInfo struct {
+        DiskTotalSize string  `comment:"总硬盘大小"`
+        DiskUsage     float64 `comment:"硬盘使用率"`
+}
+
+func NewDiskInfo() AgentAct <span class="cov8" title="1">{
+        return &amp;DiskInfo{}
+}</span>
+
+func (i *DiskInfo) Collect() <span class="cov8" title="1">{
+        d, err := disk.Usage("/")
+        if err != nil </span><span class="cov0" title="0">{
+                common.Logger.Error("collect disk info failed: ", err)
+                return
+        }</span>
+        <span class="cov8" title="1">i.DiskUsage = d.UsedPercent
+        i.DiskTotalSize = fmt.Sprintf("%dGB", d.Total/1024/1024/1024)
+
+        return</span>
+}
+
+// 采集，然后生成上报字符串
+func (i *DiskInfo) GetReportStr() string <span class="cov8" title="1">{
+        i.Collect()
+        return common.StructToJson(*i)
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package collect
+
+import (
+        "agent/common"
+        "github.com/shirou/gopsutil/v3/host"
+)
+
+type HostInfo struct {
+        AgentId      string `comment:"agentID"`
+        HostName     string `comment:"主机名"`
+        HostPlatform string `comment:"操作平台"`
+}
+
+func NewHostInfo() AgentAct <span class="cov8" title="1">{
+        return &amp;HostInfo{}
+}</span>
+
+// 采集信息
+func (i *HostInfo) Collect() <span class="cov8" title="1">{
+        pHost, err := host.Info()
+        if err != nil </span><span class="cov0" title="0">{
+                common.Logger.Error("collect host info failed: ", err)
+                return
+        }</span>
+        <span class="cov8" title="1">i.AgentId = pHost.HostID
+        i.HostName = pHost.Hostname
+        i.HostPlatform = pHost.Platform
+
+        return</span>
+}
+
+// 采集，然后生成上报字符串
+func (i *HostInfo) GetReportStr() string <span class="cov8" title="1">{
+        i.Collect()
+        return common.StructToJson(*i)
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package collect
+
+import (
+        "agent/common"
+        "fmt"
+        "github.com/shirou/gopsutil/v3/mem"
+)
+
+type MemInfo struct {
+        MemTotalSize string  `comment:"总内存大小"`
+        MemSwapSize  string  `comment:"交换内存大小"`
+        MemFreeSize  string  `comment:"剩余内存大小"`
+        MemUsage     float64 `comment:"内存使用率"`
+}
+
+func NewMemInfo() AgentAct <span class="cov8" title="1">{
+        return &amp;MemInfo{}
+}</span>
+
+func (i *MemInfo) Collect() <span class="cov8" title="1">{
+        v, err := mem.VirtualMemory()
+        if err != nil </span><span class="cov0" title="0">{
+                common.Logger.Error("collect mem info failed: ", err)
+                return
+        }</span>
+        <span class="cov8" title="1">i.MemTotalSize = fmt.Sprintf("%dMB", v.Total/1024/1024)
+        i.MemSwapSize = fmt.Sprintf("%dMB", v.SwapTotal/1024/1024)
+        i.MemFreeSize = fmt.Sprintf("%dMB", v.Free/1024/1024)
+        i.MemUsage = v.UsedPercent
+
+        return</span>
+}
+
+// 采集，然后生成上报字符串
+func (i *MemInfo) GetReportStr() string <span class="cov8" title="1">{
+        i.Collect()
+        return common.StructToJson(*i)
+}</span>
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package collect
+
+import (
+        "agent/common"
+        "github.com/shirou/gopsutil/v3/net"
+)
+
+type NetInfo struct {
+        HostIP      string `comment:"主机IP"`
+        PacketsRcv  uint64 `comment:"网络收包数"`
+        PacketsSend uint64 `comment:"网络发包数"`
+}
+
+func NewNetInfo() AgentAct <span class="cov8" title="1">{
+        return &amp;NetInfo{}
+}</span>
+
+// 网络信息
+func (i *NetInfo) Collect() <span class="cov8" title="1">{
+        nv, err := net.IOCounters(true)
+        if err != nil </span><span class="cov0" title="0">{
+                common.Logger.Error("collect net info failed: ", err)
+                return
+        }</span>
+        <span class="cov8" title="1">i.HostIP = getAllIp()
+        i.PacketsRcv = nv[0].BytesRecv
+        i.PacketsSend = nv[0].BytesSent
+
+        return</span>
+}
+
+//// 获取对外IP
+//func getExternalIP() string {
+//        conn, err := inet.Dial("udp", "8.8.8.8:80")
+//        if err != nil {
+//                log.Fatal(err)
+//        }
+//        defer conn.Close()
+//
+//        localAddr := conn.LocalAddr().(*inet.UDPAddr)
+//        return localAddr.IP.String()
+//}
+
+// 获取所有网口IP
+func getAllIp() string <span class="cov8" title="1">{
+        var ret string
+        netInfo, _ := net.Interfaces()
+        for _, val := range netInfo </span><span class="cov8" title="1">{
+                ret += val.Addrs[1].Addr + ","
+        }</span>
+        <span class="cov8" title="1">return ret</span>
+}
+
+// 采集，然后生成上报字符串
+func (i *NetInfo) GetReportStr() string <span class="cov8" title="1">{
+        i.Collect()
+        return common.StructToJson(*i)
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package common
+
+import (
+        "agent/config"
+        "go.uber.org/zap"
+        "go.uber.org/zap/zapcore"
+        "gopkg.in/natefinch/lumberjack.v2"
+)
+
+var Logger *zap.SugaredLogger
+
+func InitLogger() <span class="cov8" title="1">{
+        writeSyncer := getLogWriter()
+        encoder := getEncoder()
+        core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
+
+        logger := zap.New(core, zap.AddCaller())
+        Logger = logger.Sugar()
+}</span>
+
+func getEncoder() zapcore.Encoder <span class="cov8" title="1">{
+        encoderConfig := zap.NewProductionEncoderConfig()
+        encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+        encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+        return zapcore.NewConsoleEncoder(encoderConfig)
+}</span>
+
+func getLogWriter() zapcore.WriteSyncer <span class="cov8" title="1">{
+        lumberJackLogger := &amp;lumberjack.Logger{
+                Filename:   config.AgentCfg.ZapCfg.Path,
+                MaxSize:    config.AgentCfg.ZapCfg.MaxSize,
+                MaxBackups: config.AgentCfg.ZapCfg.MaxBackups,
+                MaxAge:     config.AgentCfg.ZapCfg.MaxAge,
+                Compress:   config.AgentCfg.ZapCfg.Compress,
+        }
+        return zapcore.AddSync(lumberJackLogger)
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package common
+
+import (
+        "encoding/json"
+        "time"
+)
+
+
+// 结构体信息转Json字符串
+func StructToJson(in interface{})string<span class="cov8" title="1">{
+        if in == nil</span><span class="cov0" title="0">{
+                return ""
+        }</span>
+        <span class="cov8" title="1">retBytes, err := json.Marshal(in)
+        if err != nil</span><span class="cov0" title="0">{
+                Logger.Error("Json Marshal Failed: ", err)
+        }</span>
+        <span class="cov8" title="1">return string(retBytes)</span>
+}
+
+// 获取当前时间
+func GetNowTime()string<span class="cov8" title="1">{
+        return time.Now().Format("2006-01-02 15:04:05")
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package config
+
+import (
+        "errors"
+        "fmt"
+        "github.com/go-playground/validator/v10"
+        "github.com/spf13/viper"
+)
+
+var AgentCfg *agentConfig = new(agentConfig)
+
+type agentConfig struct{
+        Upload                upload                        `mapstructure:"upload"      validate:"required"`
+        Mysql           mysqlConfig                `mapstructure:"mysql"       validate:"required"`
+        ZapCfg                zapConfig                `mapstructure:"zap"         validate:"required"`
+}
+
+type upload struct{
+        Url                url
+}
+
+type url struct{
+        AllInfo        string                `mapstructure:"all_info"    validate:"required"`
+        CpuInfo string                `mapstructure:"cpu_info"    validate:"required"`
+        NetInfo string                `mapstructure:"net_info"    validate:"required"`
+        HostInfo string                `mapstructure:"host_info"   validate:"required"`
+        DiskInfo string                `mapstructure:"disk_info"   validate:"required"`
+        MemInfo string                `mapstructure:"mem_info"    validate:"required"`
+}
+
+type mysqlConfig struct {
+        User string                        `mapstructure:"user"       validate:"required"`
+        Pwd  string                        `mapstructure:"password"   validate:"required"`
+        Protocol string     `mapstructure:"protocol"   validate:"required"`
+        Domain   string                `mapstructure:"domain"     validate:"required"`
+        Port int                        `mapstructure:"port"       validate:"required"`
+        DBName string                `mapstructure:"db_name"    validate:"required"`
+}
+
+
+type zapConfig struct{
+        Path                string                `mapstructure:"file_name"     validate:"required"`
+        MaxSize                int                        `mapstructure:"max_size"      validate:"required"`
+        MaxBackups        int                        `mapstructure:"max_backups"   validate:"required"`
+        MaxAge                int                        `mapstructure:"max_age"       validate:"required"`
+        Compress        bool                `mapstructure:"compress"      validate:""`
+}
+
+// 初始化配置读取
+var Path string = "./config/config.yaml"
+func InitConfig(cfgPath string)error<span class="cov8" title="1">{
+        fmt.Println(cfgPath)
+        config := viper.New()
+        config.SetConfigFile(cfgPath)
+        if err := config.ReadInConfig(); err != nil</span><span class="cov8" title="1">{
+                fmt.Errorf("Load yaml file failed: %s", err)
+                return errors.New("LOAD YAML FAILED")
+        }</span>
+        <span class="cov8" title="1">if err := config.Unmarshal(AgentCfg); err != nil</span><span class="cov0" title="0">{
+                fmt.Errorf("Unmarshal yaml file failed: %s", err)
+                return errors.New("UNMARSHAL YAML FAILED")
+        }</span>
+
+        <span class="cov8" title="1">validate := validator.New()
+        if err := validate.Struct(AgentCfg); err != nil </span><span class="cov0" title="0">{
+                fmt.Println("Check yaml content failed: ", err)
+                return errors.New("CHECK YAML CONTENT FAILED")
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}</pre>
+		
+		<pre class="file" id="file10" style="display: none">package dao
+
+import (
+        "agent/config"
+        "errors"
+        "fmt"
+        "gorm.io/driver/mysql"
+        "gorm.io/gorm"
+        "ksuid"
+)
+
+var DB *gorm.DB
+
+// 连接数据库并初始化
+func Init()error<span class="cov8" title="1">{
+        conn := fmt.Sprintf("%s:%s@%s(%s:%d)/%s?charset=utf8&amp;parseTime=True&amp;loc=Local",
+                config.AgentCfg.Mysql.User,
+                config.AgentCfg.Mysql.Pwd,
+                config.AgentCfg.Mysql.Protocol,
+                config.AgentCfg.Mysql.Domain,
+                config.AgentCfg.Mysql.Port,
+                config.AgentCfg.Mysql.DBName)
+        db, err := gorm.Open(mysql.Open(conn), &amp;gorm.Config{})
+        if err != nil</span><span class="cov8" title="1">{
+                return errors.New("DB CONNECT FAILED")
+        }</span>
+        <span class="cov8" title="1">DB = db
+        // 建表
+        createTables()
+
+        return nil</span>
+}
+
+// 创建Appcode表
+func createTables()<span class="cov8" title="1">{
+        DB.AutoMigrate(&amp;AppCode{})
+}</span>
+
+
+// 查询已有的Appcode
+var LocalUser string = "localhost"
+func GetAppcode(userDomain string)(string, error)<span class="cov8" title="1">{
+        var queryRet AppCode
+        ret := DB.Where("agent_domain = ?", userDomain).First(&amp;queryRet)
+        if ret != nil</span><span class="cov8" title="1">{
+                return queryRet.AgentAppcode, nil
+        }</span> else<span class="cov0" title="0">{
+                return "", errors.New("USER APPCODE NOT EXISTS")
+        }</span>
+}
+
+// 首次生成AppCode
+func CreateAppcode(userDomain string) string<span class="cov8" title="1">{
+        firstAppcode := ksuid.New().String()
+        DB.Create(&amp;AppCode{
+                gorm.Model{},
+                userDomain,
+                firstAppcode,
+        })
+        return firstAppcode
+}</span>
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package dao
+
+import "gorm.io/gorm"
+
+type AppCode struct{
+        gorm.Model
+
+        AgentDomain                string        `json:"agent_domain"    gorm:"column:agent_domain;    type:varchar(100);    not null;        primaryKey;"`
+        AgentAppcode        string        `json:"agent_appcode"   gorm:"column:appcode;         type:varchar(100);    not null;"`
+}
+
+
+func (i *AppCode) TableName() string<span class="cov8" title="1">{
+        return "appcode"
+}</pre>
+		
+		<pre class="file" id="file12" style="display: none">package reporter
+
+import (
+        "agent/collect"
+        "agent/common"
+        "agent/config"
+        "agent/dao"
+        "net/http"
+        "strings"
+)
+
+// 上报全部信息
+func ReportAll()<span class="cov8" title="1">{
+        report(collect.NewAgentInfo().GetReportStr(), config.AgentCfg.Upload.Url.AllInfo)
+        report(collect.NewHostInfo().GetReportStr(),  config.AgentCfg.Upload.Url.HostInfo)
+        report(collect.NewCpuInfo().GetReportStr(),   config.AgentCfg.Upload.Url.CpuInfo)
+        report(collect.NewNetInfo().GetReportStr(),   config.AgentCfg.Upload.Url.NetInfo)
+        report(collect.NewMemInfo().GetReportStr(),   config.AgentCfg.Upload.Url.MemInfo)
+        report(collect.NewDiskInfo().GetReportStr(),  config.AgentCfg.Upload.Url.DiskInfo)
+
+}</span>
+
+
+// 上报信息
+func report(info string, url string)<span class="cov8" title="1">{
+        common.Logger.Info("start uploading to url: ", url)
+        req, err := http.NewRequest("POST", url, strings.NewReader(info))
+        // 添加APPCODE字段
+        req.Header.Add("Authorization", getHeaderAppCode())
+        if err!=nil</span><span class="cov0" title="0">{
+                common.Logger.Error("upload info failed: ", err)
+        }</span>
+}
+
+// 获取APPCODE
+func getHeaderAppCode()string<span class="cov8" title="1">{
+        appcode, err := dao.GetAppcode(dao.LocalUser)
+        if err != nil</span><span class="cov0" title="0">{
+                common.Logger.Info("First time Register, creating user appcode...")
+                appcode = dao.CreateAppcode(dao.LocalUser)
+        }</span>
+        <span class="cov8" title="1">return "APPCODE " + appcode</span>
+}</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
