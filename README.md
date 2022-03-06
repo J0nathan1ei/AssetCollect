@@ -1,1 +1,2 @@
 # AssetCollect
+Golang AssetCollect Demo
